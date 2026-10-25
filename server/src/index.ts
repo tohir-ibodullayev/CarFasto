@@ -4,6 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { createApp } from './app';
 import { loadConfig } from './config';
 
+try {
+  process.loadEnvFile('.env');
+} catch {
+  // No .env file: rely on the real environment.
+}
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const config = loadConfig(process.env);
 if (config.production) config.staticDir = path.resolve(here, '../client');

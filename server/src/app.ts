@@ -56,7 +56,8 @@ export function createApp(config: AppConfig): App {
   if (config.staticDir && existsSync(config.staticDir)) {
     const staticDir = config.staticDir;
     app.use(express.static(staticDir, { index: false, maxAge: '1h' }));
-    app.get(/^\/(?!api\/|socket\.io\/).*/, (_req, res) => {
+    // Client-side routes (/host/ABC123, /join/ABC123, ...) have no file extension.
+    app.get(/^\/(?!api\/|socket\.io\/)[^.]*$/, (_req, res) => {
       res.set('Cache-Control', 'no-cache').sendFile(path.join(staticDir, 'index.html'));
     });
   }

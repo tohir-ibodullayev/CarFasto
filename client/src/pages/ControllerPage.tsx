@@ -49,7 +49,7 @@ export function ControllerPage({ initialCode }: { initialCode: string | null }) 
   const [motionIssue, setMotionIssue] = useState<MotionIssue>(null);
   const [sensitivity, setSensitivity] = useState(storageGet<number>(localStorage, 'ss-sensitivity') ?? DEFAULT_SENSITIVITY);
   const [meter, setMeter] = useState(0);
-  const [localFlash, setLocalFlash] = useState(0);
+  const [localFlash, setLocalFlash] = useState(-Infinity);
   const [serverFlash, setServerFlash] = useState<Flash | null>(null);
   const [localTests, setLocalTests] = useState(0);
   const [wakeStatus, setWakeStatus] = useState<WakeLockKeeper['status']>('idle');
@@ -523,7 +523,9 @@ export function ControllerPage({ initialCode }: { initialCode: string | null }) 
             </div>
             {motionMode === 'motion' && (
               <label className="sensitivity">
-                Sensitivity: <b>{SENSITIVITY_LEVELS[sensitivity].label}</b>
+                <span>
+                  Sensitivity: <b>{SENSITIVITY_LEVELS[sensitivity].label}</b>
+                </span>
                 <input
                   type="range"
                   min={0}
@@ -645,12 +647,14 @@ export function ControllerPage({ initialCode }: { initialCode: string | null }) 
         {motionMode === 'touch' && <span className="chip chip-warn">TOUCH</span>}
       </div>
       {body}
+      {motionMode !== 'pending' && (
       <div className="feedback-row">
         <span className={`fb ${localActive ? 'fb-on' : ''}`}>{motionMode === 'touch' ? 'Tap' : 'Shake'} detected</span>
         <span className={`fb ${serverActive ? (serverFlash!.ok ? 'fb-ok' : 'fb-bad') : ''}`}>
           {serverActive ? serverFlash!.text : 'Server'}
         </span>
       </div>
+      )}
       <WakeNote status={wakeStatus} />
     </main>
   );

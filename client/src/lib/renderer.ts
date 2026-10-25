@@ -44,7 +44,18 @@ const SHOULDER = '#101a17';
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
-  ctx.roundRect(x, y, w, h, Math.min(r, w / 2, h / 2));
+  if (w <= 0 || h <= 0) return;
+  ctx.roundRect(x, y, w, h, Math.max(0, Math.min(r, w / 2, h / 2)));
+}
+
+/** Sets the font, shrinking it until `text` fits in `maxWidth`. */
+function fitFont(ctx: CanvasRenderingContext2D, text: string, weight: number, px: number, maxWidth: number) {
+  let size = Math.round(px);
+  ctx.font = `${weight} ${size}px ${FONT}`;
+  while (size > 9 && ctx.measureText(text).width > maxWidth) {
+    size -= 1;
+    ctx.font = `${weight} ${size}px ${FONT}`;
+  }
 }
 
 export function formatTime(seconds: number): string {
@@ -140,6 +151,12 @@ export class GameRenderer {
     const L = this.layout(w, h);
     ctx.fillStyle = '#0a0c12';
     ctx.fillRect(0, 0, w, h);
+    const tint = ctx.createLinearGradient(0, 0, w, 0);
+    tint.addColorStop(0, 'rgba(59,164,255,0.10)');
+    tint.addColorStop(0.5, 'rgba(10,12,18,0)');
+    tint.addColorStop(1, 'rgba(255,138,31,0.10)');
+    ctx.fillStyle = tint;
+    ctx.fillRect(0, 0, w, h);
     if (view) this.detectEvents(view, now, L);
 
     for (const team of TEAMS) this.drawRoad(ctx, L, team, view, now);
@@ -149,11 +166,11 @@ export class GameRenderer {
     if (view) this.drawCountdown(ctx, L, view, now);
 
     if (room && Object.values(room.players).some((p) => p?.sim)) {
-      ctx.font = `700 ${Math.round(L.hudH * 0.15)}px ${FONT}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
       ctx.fillStyle = '#f5d90a';
-      ctx.fillText('KEYBOARD SIMULATION (DEV)', w / 2, h - 8);
+      fitFont(ctx, 'KEYBOARD SIM (DEV)', 800, L.hudH * 0.15, L.gap * 0.92);
+      ctx.fillText('KEYBOARD SIM (DEV)', w / 2, h - 8);
     }
   }
 
@@ -296,34 +313,38 @@ export class GameRenderer {
     ctx.font = `900 ${Math.round(hudH * 0.42)}px ${FONT}`;
     ctx.fillText(formatTime(view?.timeS ?? 0), w / 2, hudH * 0.4);
     ctx.fillStyle = '#9aa3b2';
-    ctx.font = `700 ${Math.round(hudH * 0.15)}px ${FONT}`;
-    ctx.fillText(`SURVIVAL TIME${room ? `  ·  ROUND ${room.round}` : ''}`, w / 2, hudH * 0.8);
+    const sub = `SURVIVAL TIME${room ? ` · ROUND ${room.round}` : ''}`;
+    fitFont(ctx, sub, 700, hudH * 0.15, L.gap + L.ppu * 0.6);
+    ctx.fillText(sub, w / 2, hudH * 0.8);
 
     for (const team of TEAMS) {
       const cx = L.roadX[team] + L.roadW / 2;
       const color = TEAM_COLOR[team];
       const crashed = view?.cars[team].crashed ?? false;
-      ctx.font = `900 ${Math.round(hudH * 0.3)}px ${FONT}`;
       ctx.fillStyle = color;
+      fitFont(ctx, `${TEAM_LABEL[team].toUpperCase()} TEAM`, 900, hudH * 0.3, L.roadW * 0.7);
       ctx.fillText(`${TEAM_LABEL[team].toUpperCase()} TEAM`, cx, hudH * 0.3);
       if (crashed) {
-        ctx.font = `900 ${Math.round(hudH * 0.14)}px ${FONT}`;
+        ctx.font = `900 ${Math.round(hudH * 0.13)}px ${FONT}`;
         ctx.fillStyle = '#ff5a4d';
-        ctx.fillText('CRASHED', cx + L.roadW * 0.42, hudH * 0.3);
+        ctx.textAlign = team === 'blue' ? 'left' : 'right';
+        ctx.fillText('CRASHED', team === 'blue' ? L.roadX.blue : L.roadX.orange + L.roadW, hudH * 0.12);
+        ctx.textAlign = 'center';
       }
       const left = room?.players[roleFor(team, 'left')];
       const right = room?.players[roleFor(team, 'right')];
-      const fontPx = Math.round(hudH * 0.19);
-      ctx.font = `700 ${fontPx}px ${FONT}`;
-      const leftText = `◀ ${left?.name ?? '—'}`;
-      const rightText = `${right?.name ?? '—'} ▶`;
+      const leftText = `◀ ${left?.name ?? '—'}${left && !left.connected ? ' (offline)' : ''}`;
+      const rightText = `${right?.name ?? '—'}${right && !right.connected ? ' (offline)' : ''} ▶`;
       const y = hudH * 0.7;
       const pad = L.ppu * 0.15;
+      const maxW = L.roadW / 2 - pad * 1.5;
       ctx.textAlign = 'right';
       ctx.fillStyle = left?.connected ? '#e9edf5' : '#ff5a4d';
+      fitFont(ctx, leftText, 700, hudH * 0.19, maxW);
       ctx.fillText(leftText, cx - pad, y);
       ctx.textAlign = 'left';
       ctx.fillStyle = right?.connected ? '#e9edf5' : '#ff5a4d';
+      fitFont(ctx, rightText, 700, hudH * 0.19, maxW);
       ctx.fillText(rightText, cx + pad, y);
       ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(255,255,255,0.3)';

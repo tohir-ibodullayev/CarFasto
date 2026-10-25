@@ -177,8 +177,10 @@ export function Lobby({ room, joinUrl, conn, isHost, testFlash, onStart, onKick,
               </div>
               <label className="sim-toggle">
                 <input type="checkbox" checked={sim.autopilot} onChange={(e) => sim.onAutopilot(e.target.checked)} />
-                Autopilot for simulated players (toggle with <b>P</b>): they steer their own direction automatically, so one real
-                phone can be tested alone.
+                <span>
+                  Autopilot for simulated players (toggle with <b>P</b>): they steer their own direction automatically, so one real
+                  phone can be tested alone.
+                </span>
               </label>
             </div>
           )}

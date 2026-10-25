@@ -68,10 +68,11 @@ export function GameScreen({ room, buffer, conn, isHost, onAction, simRoles = []
       </div>
       {simRoles.length > 0 && (
         <div className="sim-legend">
-          KEYBOARD SIM (DEV){autopilot ? ' · AUTOPILOT ON' : ''} · P toggles autopilot:{' '}
+          <span>KEYBOARD SIM (DEV)</span>
+          <span>Autopilot {autopilot ? 'ON' : 'off'} (P)</span>
           {simRoles.map((r) => (
             <span key={r}>
-              {roleLabel(r)} <b>{SIM_KEYS[r].label}</b>
+              {roleLabel(r)}: <b>{SIM_KEYS[r].label}</b>
             </span>
           ))}
         </div>

@@ -193,9 +193,11 @@ code {
   padding: 10px 12px;
   font-size: 0.92rem;
   line-height: 1.4;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  text-align: left;
+}
+.warn .btn {
+  display: block;
+  margin-top: 8px;
 }
 .notice {
   background: rgba(59, 164, 255, 0.12);
@@ -548,18 +550,19 @@ code {
 }
 .sim-legend {
   position: absolute;
-  left: 12px;
-  bottom: 10px;
+  left: 10px;
+  top: 10px;
   display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-  font-size: 0.85rem;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.72rem;
   font-weight: 700;
   color: #f5d90a;
-  background: rgba(0, 0, 0, 0.55);
-  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 6px 9px;
   border-radius: 10px;
-  max-width: 40vw;
+  max-width: 17vw;
+  opacity: 0.85;
 }
 .overlay {
   position: absolute;
