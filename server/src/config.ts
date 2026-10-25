@@ -1,3 +1,5 @@
+import { normalizePublicOrigin } from '../../shared/origin';
+
 export interface AppConfig {
   port: number;
   host: string;
@@ -21,15 +23,18 @@ function int(value: string | undefined, fallback: number): number {
   return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
 }
 
-function origin(value: string | undefined): string | null {
-  if (!value) return null;
-  try {
-    const url = new URL(value);
-    return url.origin;
-  } catch {
-    console.warn(`Ignoring invalid PUBLIC_ORIGIN: ${value}`);
-    return null;
+function resolvePublicOrigin(env: NodeJS.ProcessEnv): string | null {
+  const fromPublic = normalizePublicOrigin(env.PUBLIC_ORIGIN);
+  if (env.PUBLIC_ORIGIN && !fromPublic) {
+    console.warn(`Ignoring invalid PUBLIC_ORIGIN: ${env.PUBLIC_ORIGIN}`);
   }
+  if (fromPublic) return fromPublic;
+
+  // Render injects this automatically — prefer it over a broken manual value.
+  const fromRender = normalizePublicOrigin(env.RENDER_EXTERNAL_URL);
+  if (fromRender) return fromRender;
+
+  return null;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Partial<AppConfig> = {}): AppConfig {
@@ -37,7 +42,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, overrides: Part
   return {
     port: int(env.PORT, 3000),
     host: env.HOST || '0.0.0.0',
-    publicOrigin: origin(env.PUBLIC_ORIGIN),
+    publicOrigin: resolvePublicOrigin(env),
     simEnabled: bool(env.ENABLE_KEYBOARD_SIM, !production),
     production,
     corsOrigins: (env.CORS_ORIGINS ?? '')

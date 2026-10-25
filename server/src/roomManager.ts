@@ -33,7 +33,7 @@ export class RoomManager {
       now: this.wallNow,
       reconnectWindowMs: this.config.reconnectWindowMs,
       simEnabled: this.config.simEnabled,
-      joinUrl: this.config.publicOrigin ? `${this.config.publicOrigin}/join/${code}` : null,
+      joinUrl: this.config.publicOrigin ? `${this.config.publicOrigin.replace(/\/+$/, '')}/join/${code}` : null,
     });
     this.rooms.set(code, room);
     return room;

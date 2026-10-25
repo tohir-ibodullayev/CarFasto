@@ -6,7 +6,7 @@ import { GameScreen } from '../components/GameScreen';
 import { Lobby } from '../components/Lobby';
 import { sfx } from '../lib/audio';
 import { SnapshotBuffer } from '../lib/interpolation';
-import { createSocket, loadServerConfig, publicOrigin, request, trackConnection, type ConnState } from '../lib/net';
+import { createSocket, loadServerConfig, resolveJoinUrl, request, trackConnection, type ConnState } from '../lib/net';
 import { navigate, storageGet, storageSet } from '../lib/router';
 import { SIM_KEYS, SimBots } from '../lib/simBots';
 
@@ -156,7 +156,7 @@ export function HostPage({ initialCode }: { initialCode: string | null }) {
     );
   }
 
-  const joinUrl = room.joinUrl ?? `${publicOrigin(config)}/join/${room.code}`;
+  const joinUrl = resolveJoinUrl(room.joinUrl, room.code, config);
 
   if (room.phase === 'lobby') {
     return (

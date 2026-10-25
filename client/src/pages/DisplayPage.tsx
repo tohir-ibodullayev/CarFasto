@@ -3,7 +3,7 @@ import type { RoomState, ServerConfig, Snapshot } from '../../../shared/protocol
 import { GameScreen } from '../components/GameScreen';
 import { Lobby } from '../components/Lobby';
 import { SnapshotBuffer } from '../lib/interpolation';
-import { createSocket, loadServerConfig, publicOrigin, request, trackConnection, type ConnState } from '../lib/net';
+import { createSocket, loadServerConfig, resolveJoinUrl, request, trackConnection, type ConnState } from '../lib/net';
 
 /** Read-only mirror of a match for a second screen. */
 export function DisplayPage({ code }: { code: string }) {
@@ -48,7 +48,7 @@ export function DisplayPage({ code }: { code: string }) {
 
   if (room.phase === 'lobby') {
     return (
-      <Lobby room={room} joinUrl={room.joinUrl ?? `${publicOrigin(config)}/join/${room.code}`} conn={conn} isHost={false} testFlash={{}} />
+      <Lobby room={room} joinUrl={resolveJoinUrl(room.joinUrl, room.code, config)} conn={conn} isHost={false} testFlash={{}} />
     );
   }
   return <GameScreen room={room} buffer={bufferRef.current} conn={conn} isHost={false} />;

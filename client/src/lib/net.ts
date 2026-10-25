@@ -1,4 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
+import { buildJoinUrl, normalizePublicOrigin } from '../../../shared/origin';
 import type { ErrorCode, ServerConfig } from '../../../shared/protocol';
 
 /** Optional when the frontend and backend share an origin (the default). */
@@ -31,8 +32,22 @@ export function loadServerConfig(): Promise<ServerConfig> {
   return configPromise;
 }
 
+/** Prefer a valid server PUBLIC_ORIGIN; otherwise the page's own origin (correct on Render). */
 export function publicOrigin(config: ServerConfig | null): string {
-  return config?.publicOrigin ?? window.location.origin;
+  return normalizePublicOrigin(config?.publicOrigin) ?? window.location.origin;
+}
+
+/** Prefer a server-provided join URL only if its origin is valid; otherwise rebuild from the page origin. */
+export function resolveJoinUrl(roomJoinUrl: string | null | undefined, code: string, config: ServerConfig | null): string {
+  if (roomJoinUrl) {
+    try {
+      const origin = normalizePublicOrigin(new URL(roomJoinUrl).origin);
+      if (origin) return buildJoinUrl(origin, code);
+    } catch {
+      /* fall through */
+    }
+  }
+  return buildJoinUrl(publicOrigin(config), code);
 }
 
 export type ConnState = 'connecting' | 'connected' | 'reconnecting' | 'offline';

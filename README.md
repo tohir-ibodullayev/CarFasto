@@ -77,16 +77,18 @@ The game needs a host that runs a **long-lived Node process with WebSocket suppo
 | Start command | `npm start` |
 | Instance | Free (keep **one** instance — rooms are in memory) |
 
-3. Environment variables:
+3. Environment variables — set each on its **own** line (do not paste `NODE_ENV` into the `PUBLIC_ORIGIN` value):
 
 ```
 NODE_ENV=production
 PUBLIC_ORIGIN=https://<your-service>.onrender.com
 ```
 
+If `PUBLIC_ORIGIN` is missing or invalid, the server uses Render’s automatic `RENDER_EXTERNAL_URL`, and the host page falls back to the browser’s own origin so the QR still points at `/join/<code>`.
+
 4. Deploy. Open the `.onrender.com` URL → **Host game**. Free instances sleep when idle — wake the site about a minute before a demo.
 
-Or use the included `render.yaml` Blueprint (same build/start commands).
+Or use the included `render.yaml` Blueprint (same build/start commands). After redeploy, create a **new** room so the QR picks up the fixed join URL.
 
 ### Fly.io (Docker)
 

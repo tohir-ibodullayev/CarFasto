@@ -12,6 +12,7 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # Set after the first deploy to your real URL, e.g. https://split-steering.onrender.com
+      # Optional. Prefer https://<service>.onrender.com alone.
+      # If unset, the app uses Render's RENDER_EXTERNAL_URL for QR / join links.
       - key: PUBLIC_ORIGIN
         sync: false
