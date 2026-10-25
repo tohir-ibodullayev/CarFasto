@@ -1,0 +1,17 @@
+# Blueprint for https://render.com — one long-lived Node process (WebSockets + in-memory rooms).
+# Create from the Render dashboard: New → Blueprint → this repo, or copy the commands into a Web Service.
+services:
+  - type: web
+    name: split-steering
+    runtime: node
+    plan: free
+    # NODE_ENV=production makes `npm ci` skip vite/esbuild. Always install devDependencies for the build.
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Set after the first deploy to your real URL, e.g. https://split-steering.onrender.com
+      - key: PUBLIC_ORIGIN
+        sync: false

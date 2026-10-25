@@ -65,10 +65,28 @@ The game needs a host that runs a **long-lived Node process with WebSocket suppo
 
 ### Render (free web service)
 
-1. Push this repository to GitHub and create a **Web Service** on <https://render.com> from it.
-2. Runtime **Node**, build command `npm ci && npm run build`, start command `npm start`.
-3. Add environment variable `PUBLIC_ORIGIN=https://<your-service>.onrender.com` (optional, but makes QR codes stable).
-4. Deploy. Render provides HTTPS and WebSockets. Free instances sleep when idle, so open the site a minute before the demo.
+`NODE_ENV=production` makes `npm ci` skip build tools (`vite`, `esbuild`). Use `--include=dev` in the **build** command or the deploy will start without `dist/server/index.js`.
+
+1. Push this repository to GitHub. On <https://render.com> create a **Web Service** from the repo (branch with this code, not an empty `main`).
+2. Settings:
+
+| Field | Value |
+| --- | --- |
+| Runtime | Node |
+| Build command | `npm ci --include=dev && npm run build` |
+| Start command | `npm start` |
+| Instance | Free (keep **one** instance — rooms are in memory) |
+
+3. Environment variables:
+
+```
+NODE_ENV=production
+PUBLIC_ORIGIN=https://<your-service>.onrender.com
+```
+
+4. Deploy. Open the `.onrender.com` URL → **Host game**. Free instances sleep when idle — wake the site about a minute before a demo.
+
+Or use the included `render.yaml` Blueprint (same build/start commands).
 
 ### Fly.io (Docker)
 
