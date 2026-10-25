@@ -73,8 +73,21 @@ export class GameRenderer {
   private prevRound = -1;
   private goAt: number | null = null;
   private lastFrame = 0;
+  private replayMode = false;
   /** Sound only plays on the main host screen, not on extra displays. */
   constructor(private readonly playSound: boolean) {}
+
+  /** Reset crash FX so a slow-mo clip can re-trigger them at impact. */
+  beginReplay(): void {
+    this.replayMode = true;
+    this.particles = [];
+    this.crashAt = { blue: null, orange: null };
+    this.prevMoving = { blue: false, orange: false };
+  }
+
+  endReplay(): void {
+    this.replayMode = false;
+  }
 
   private layout(w: number, h: number): Layout {
     const hudH = Math.max(76, Math.min(130, h * 0.13));
@@ -121,7 +134,7 @@ export class GameRenderer {
       this.goAt = now;
       if (this.playSound) sfx.countdown(0);
     }
-    if (view.phase === 'finished' && this.prevPhase !== 'finished' && this.playSound) sfx.win();
+    // Win sting plays when the result overlay opens (after replay), not on phase change.
     this.prevPhase = view.phase;
   }
 
@@ -164,6 +177,7 @@ export class GameRenderer {
     this.drawHud(ctx, L, view, room);
     this.drawParticles(ctx, dt);
     if (view) this.drawCountdown(ctx, L, view, now);
+    if (this.replayMode) this.drawReplayBadge(ctx, L, now);
 
     if (room && Object.values(room.players).some((p) => p?.sim)) {
       ctx.textAlign = 'center';
@@ -364,6 +378,35 @@ export class GameRenderer {
       ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
     }
     ctx.globalAlpha = 1;
+  }
+
+  private drawReplayBadge(ctx: CanvasRenderingContext2D, L: Layout, now: number) {
+    const pulse = 0.72 + 0.28 * Math.sin(now / 180);
+    const label = 'REPLAY';
+    const sub = 'SLOW MOTION';
+    const boxW = Math.min(L.w * 0.28, L.ppu * 4.2);
+    const boxH = Math.max(52, L.hudH * 0.72);
+    const x = L.w / 2 - boxW / 2;
+    const y = L.hudH + L.ppu * 0.35;
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = 'rgba(0,0,0,0.72)';
+    roundRect(ctx, x, y, boxW, boxH, 12);
+    ctx.fill();
+    ctx.strokeStyle = '#f5d90a';
+    ctx.lineWidth = 2;
+    roundRect(ctx, x, y, boxW, boxH, 12);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#f5d90a';
+    fitFont(ctx, label, 900, boxH * 0.42, boxW * 0.86);
+    ctx.fillText(label, L.w / 2, y + boxH * 0.38);
+    ctx.fillStyle = '#e9edf5';
+    fitFont(ctx, sub, 700, boxH * 0.22, boxW * 0.86);
+    ctx.fillText(sub, L.w / 2, y + boxH * 0.72);
+    ctx.restore();
   }
 
   private drawCountdown(ctx: CanvasRenderingContext2D, L: Layout, view: ViewState, now: number) {

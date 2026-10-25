@@ -564,6 +564,17 @@ code {
   max-width: 17vw;
   opacity: 0.85;
 }
+.replay-skip {
+  position: absolute;
+  right: 14px;
+  bottom: 16px;
+  z-index: 3;
+}
+.replay-skip .btn {
+  background: rgba(0, 0, 0, 0.65);
+  border-color: rgba(245, 217, 10, 0.55);
+  color: #f5d90a;
+}
 .overlay {
   position: absolute;
   inset: 0;

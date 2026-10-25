@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { ROLES, TEAM_LABEL, roleFor, type Role } from '../../../shared/constants';
 import type { RoomState } from '../../../shared/protocol';
+import { sfx } from '../lib/audio';
 import type { SnapshotBuffer } from '../lib/interpolation';
 import type { ConnState } from '../lib/net';
+import { CrashReplay } from '../lib/replay';
 import { GameRenderer, formatTime } from '../lib/renderer';
 import { SIM_KEYS } from '../lib/simBots';
 import { ConnPill, MuteButton, roleLabel, useNow } from './common';
@@ -22,13 +24,32 @@ export function GameScreen({ room, buffer, conn, isHost, onAction, simRoles = []
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const roomRef = useRef(room);
   roomRef.current = room;
+  const bufferRef = useRef(buffer);
+  bufferRef.current = buffer;
+  const isHostRef = useRef(isHost);
+  isHostRef.current = isHost;
+  const replayRef = useRef<CrashReplay | null>(null);
+  const rendererRef = useRef<GameRenderer | null>(null);
+  const replayDoneRef = useRef(false);
+  const [replaying, setReplaying] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const now = useNow(500);
+
+  const endReplayToResult = () => {
+    if (replayDoneRef.current) return;
+    replayDoneRef.current = true;
+    replayRef.current = null;
+    rendererRef.current?.endReplay();
+    setReplaying(false);
+    setShowResult(true);
+    if (isHostRef.current) sfx.win();
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
     const renderer = new GameRenderer(isHost);
+    rendererRef.current = renderer;
     let raf = 0;
     const frame = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -39,20 +60,43 @@ export function GameScreen({ room, buffer, conn, isHost, onAction, simRoles = []
         canvas.height = Math.round(h * dpr);
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      renderer.draw(ctx, w, h, buffer.sample(), roomRef.current, performance.now());
+      const replay = replayRef.current;
+      const view = replay ? replay.sample() : bufferRef.current.sample();
+      if (replay?.status().done) endReplayToResult();
+      renderer.draw(ctx, w, h, view, roomRef.current, performance.now());
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
-  }, [buffer, isHost]);
+    return () => {
+      cancelAnimationFrame(raf);
+      rendererRef.current = null;
+    };
+    // Intentionally recreate only when sound ownership (host vs display) changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHost]);
 
   useEffect(() => {
     if (room.phase !== 'finished') {
+      replayRef.current = null;
+      replayDoneRef.current = false;
+      rendererRef.current?.endReplay();
+      setReplaying(false);
       setShowResult(false);
       return;
     }
-    const id = setTimeout(() => setShowResult(true), 1100);
+    // Capture immediately so later snapshots / rematch clears cannot empty the clip.
+    replayDoneRef.current = false;
+    const replay = CrashReplay.tryStart(bufferRef.current);
+    if (replay) {
+      replayRef.current = replay;
+      rendererRef.current?.beginReplay();
+      setReplaying(true);
+      setShowResult(false);
+      return;
+    }
+    const id = setTimeout(() => endReplayToResult(), 900);
     return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room.phase, room.round]);
 
   const result = room.result;
@@ -75,6 +119,14 @@ export function GameScreen({ room, buffer, conn, isHost, onAction, simRoles = []
               {roleLabel(r)}: <b>{SIM_KEYS[r].label}</b>
             </span>
           ))}
+        </div>
+      )}
+
+      {replaying && (
+        <div className="replay-skip">
+          <button type="button" className="btn btn-ghost" onClick={endReplayToResult}>
+            Skip replay
+          </button>
         </div>
       )}
 
