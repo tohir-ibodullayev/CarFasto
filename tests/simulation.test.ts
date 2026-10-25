@@ -1,19 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import {
-  LANES,
-  LANE_CHANGE_TICKS,
-  PLAN_REACTION_S,
-  PLAN_REPEAT_S,
-  PLAYER_CAR,
-  START_LANE,
-  TICK_RATE,
-  TRAFFIC_BODY,
-  VIEW_AHEAD,
-  type Direction,
-  type Team,
-} from '../shared/constants';
+import { LANES, LANE_CHANGE_TICKS, PLAN_REPEAT_S, START_LANE, TICK_RATE, type Direction, type Team } from '../shared/constants';
+import { isMoveSafe, planTargetLane } from '../shared/sim/autopilot';
 import { applySteer, carCollides, createSim, stepSim, type SimState } from '../shared/sim/simulation';
-import { freeLanes, isTransitionReachable, maxMovesBetween } from '../shared/sim/traffic';
+import { isTransitionReachable, maxMovesBetween } from '../shared/sim/traffic';
 
 function stepN(sim: SimState, n: number) {
   for (let i = 0; i < n; i++) stepSim(sim);
@@ -30,45 +19,11 @@ function makeBot(team: Team) {
   return (sim: SimState) => {
     const car = sim.cars[team];
     if (car.moveTick >= 0 || car.crashed) return;
-    const horizon = VIEW_AHEAD - sim.speed * PLAN_REACTION_S;
-    const waves = new Map<number, { z: number; blocked: number[]; visible: boolean }>();
-    for (const o of sim.obstacles) {
-      const reach = (PLAYER_CAR.hitLength + TRAFFIC_BODY[o.kind].hitLength) / 2;
-      if (o.z < -reach) continue;
-      const w = waves.get(o.wave) ?? { z: o.z, blocked: [], visible: true };
-      w.blocked.push(o.lane);
-      w.z = Math.min(w.z, o.z);
-      if (o.z - TRAFFIC_BODY[o.kind].length / 2 > horizon) w.visible = false;
-      waves.set(o.wave, w);
-    }
-    const ordered = [...waves.values()]
-      .filter((w) => w.visible)
-      .sort((a, b) => a.z - b.z)
-      .slice(0, 3);
-    if (ordered.length === 0) return;
-    let best = { cost: Infinity, first: car.lane };
-    const dfs = (i: number, lane: number, cost: number, first: number) => {
-      if (cost >= best.cost) return;
-      if (i === ordered.length) {
-        best = { cost, first };
-        return;
-      }
-      for (const next of freeLanes(ordered[i].blocked)) {
-        dfs(i + 1, next, cost + Math.abs(next - lane) * (i === 0 ? 1 : 0.9), i === 0 ? next : first);
-      }
-    };
-    dfs(0, car.lane, 0, car.lane);
-    if (best.first === car.lane) return;
-    const dir: Direction = best.first < car.lane ? 'left' : 'right';
+    const target = planTargetLane(car.lane, sim.speed, sim.obstacles);
+    if (target === car.lane) return;
+    const dir: Direction = target < car.lane ? 'left' : 'right';
     if (sim.tick - lastMove[dir] < repeatTicks) return;
-    const target = car.lane + (dir === 'left' ? -1 : 1);
-    const sweep = sim.speed * (LANE_CHANGE_TICKS / TICK_RATE);
-    const unsafe = sim.obstacles.some((o) => {
-      if (o.lane !== target) return false;
-      const reach = (PLAYER_CAR.hitLength + TRAFFIC_BODY[o.kind].hitLength) / 2;
-      return o.z > -reach && o.z < reach + sweep;
-    });
-    if (unsafe) return;
+    if (!isMoveSafe(car.lane + (dir === 'left' ? -1 : 1), sim.speed, sim.obstacles)) return;
     if (applySteer(sim, team, dir) === 'ok') lastMove[dir] = sim.tick;
   };
 }

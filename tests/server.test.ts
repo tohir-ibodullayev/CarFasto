@@ -63,7 +63,7 @@ async function hostRoom(url: string) {
   return { host, code: created.code as string, hostToken: created.hostToken as string, room, action };
 }
 
-async function joinPlayer(url: string, code: string, role: Role, name = role): Promise<Player> {
+async function joinPlayer(url: string, code: string, role: Role, name: string = role): Promise<Player> {
   const socket = await client(url);
   const res = await emit(socket, 'player:join', { code, name, role });
   expect(res.ok, JSON.stringify(res)).toBe(true);

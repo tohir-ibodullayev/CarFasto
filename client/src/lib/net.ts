@@ -1,0 +1,52 @@
+import { io, type Socket } from 'socket.io-client';
+import type { ErrorCode, ServerConfig } from '../../../shared/protocol';
+
+/** Optional when the frontend and backend share an origin (the default). */
+const SERVER_URL: string = import.meta.env.VITE_SERVER_URL || '';
+
+export function createSocket(): Socket {
+  return io(SERVER_URL || undefined, {
+    transports: ['websocket', 'polling'],
+    reconnectionDelay: 400,
+    reconnectionDelayMax: 2000,
+    forceNew: true,
+  });
+}
+
+export type Failure = { ok: false; error: ErrorCode | 'timeout'; message: string };
+
+export async function request<T>(socket: Socket, event: string, payload?: unknown, timeoutMs = 6000): Promise<T | Failure> {
+  try {
+    return (await socket.timeout(timeoutMs).emitWithAck(event, payload)) as T | Failure;
+  } catch {
+    return { ok: false, error: 'timeout', message: 'The server did not answer. Check your connection.' };
+  }
+}
+
+let configPromise: Promise<ServerConfig> | null = null;
+export function loadServerConfig(): Promise<ServerConfig> {
+  configPromise ??= fetch(`${SERVER_URL}/api/config`)
+    .then((r) => r.json() as Promise<ServerConfig>)
+    .catch(() => ({ publicOrigin: null, simEnabled: false, reconnectWindowMs: 90000 }));
+  return configPromise;
+}
+
+export function publicOrigin(config: ServerConfig | null): string {
+  return config?.publicOrigin ?? window.location.origin;
+}
+
+export type ConnState = 'connecting' | 'connected' | 'reconnecting' | 'offline';
+
+export function trackConnection(socket: Socket, onChange: (state: ConnState) => void): () => void {
+  const connect = () => onChange('connected');
+  const disconnect = () => onChange(navigator.onLine ? 'reconnecting' : 'offline');
+  const error = () => onChange(navigator.onLine ? 'reconnecting' : 'offline');
+  socket.on('connect', connect);
+  socket.on('disconnect', disconnect);
+  socket.on('connect_error', error);
+  return () => {
+    socket.off('connect', connect);
+    socket.off('disconnect', disconnect);
+    socket.off('connect_error', error);
+  };
+}

@@ -36,7 +36,7 @@ export const VIEW_AHEAD = 8.5;
 export const VIEW_BEHIND = 1.5;
 export const SPAWN_Z = 11;
 export const DESPAWN_Z = -3;
-export const FIRST_WAVE_DISTANCE = 15;
+export const FIRST_WAVE_DISTANCE = 22;
 
 export interface BodySize {
   width: number;
