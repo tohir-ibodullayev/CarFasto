@@ -24,7 +24,7 @@
 1. Press **Start race**: a 3-2-1 countdown, then GO.
 2. Coach the room: "The first car always blocks your starting lane. Shout at your teammate!" Each shake moves the team's car exactly one lane, with a ~150 ms slide. Shakes during a slide are ignored, so teams have to take turns.
 3. Traffic speeds up over about a minute. Typical rounds last 45 to 90 seconds.
-4. The first crash ends the round: an explosion, then a big **"BLUE TEAM WINS!"** overlay (or a draw if both crash in the same instant). The phones show YOU WIN / CRASHED.
+4. The first crash ends the round: the laptop plays a short **slow-mo REPLAY** of the last ~2 seconds into the impact, then a big **"BLUE TEAM WINS!"** overlay (or a draw if both crash in the same instant). Hosts can tap **Skip replay**. The phones show YOU WIN / CRASHED.
 
 **3:30 to 4:30: resilience (optional, but impressive)**
 
